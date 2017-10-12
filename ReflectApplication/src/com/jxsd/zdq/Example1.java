@@ -1,7 +1,14 @@
 package com.jxsd.zdq;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
+/**
+ * java反射机制详解 及 Method.invoke解释
+ * http://blog.csdn.net/nemo2011/article/details/6585683
+ * @author charles
+ */
 public class Example1 {
 
 	public String property1 = "SSS";
@@ -30,7 +37,48 @@ public class Example1 {
 			e.printStackTrace();
 		}
 		/*------得到某个类的静态属性------*/
-
+		/*------执行某个对象的方法------*/
+		
+		try {
+			Object result = invokeMethod(example1, "getAString", args);
+			System.out.println("getAString方法结果：" + result.toString());
+		} catch (NoSuchMethodException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		/*------执行某个对象的方法------*/
+		/*------执行类的静态方法------*/
+		try {
+			invokeStaticMethod("com.jxsd.zdq.Example1", "printString", args);
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		/*------执行类的静态方法------*/
+		/*------新建实例------*/
+		try {
+			Example1 object = (Example1) newInstance("com.jxsd.zdq.Example1", args);
+			object.printNewInstance();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (NoSuchMethodException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		/*------新建实例------*/
+	}
+	public String getAString() {
+		System.out.println("execute method getAString()");
+		return "KKK";
+	}
+	public static void printString() {
+		System.out.println("execute method printString()");
+	}
+	private void printNewInstance() {
+		System.out.println("execute method printNewInstance()");
 	}
 	/**
 	 * 得到某个对象的属性
@@ -58,11 +106,69 @@ public class Example1 {
 	 */
 	private static Object getStaticProperty(String className,String fieldName) 
 			throws ClassNotFoundException, NoSuchFieldException, Exception {
-		Class<?> ownerClass = Class.forName(className);
-		Field field = ownerClass.getField(fieldName);
-		Object property = field.get(ownerClass);
+		Class<?> ownerClass = Class.forName(className);	//首先得到这个类的Class
+		Field field = ownerClass.getField(fieldName);	//通过Class得到类声明的属性
+		Object property = field.get(ownerClass);	//从类的Class里获取属性的实例
 		return property;
 	}
-	
-
+	/**
+	 * 执行某对象的方法
+	 * @param owner
+	 * @param methodName
+	 * @param args
+	 * @return
+	 * @throws NoSuchMethodException
+	 * @throws Exception
+	 */
+	private static Object invokeMethod(Object owner,String methodName,Object[] args) 
+			throws NoSuchMethodException, Exception {
+		Class<? extends Object> ownerClass = owner.getClass();
+		@SuppressWarnings("rawtypes")
+		Class[] argsClass = new Class[args.length];
+		for(int i = 0; i < argsClass.length; i ++) {
+			argsClass[i] = args[i].getClass();
+		}
+		Method method = ownerClass.getMethod(methodName, argsClass);
+		return method.invoke(owner, args);
+	}
+	/**
+	 * 执行类的静态方法
+	 * @param className
+	 * @param methodName
+	 * @param args
+	 * @throws ClassNotFoundException
+	 * @throws Exception
+	 */
+	private static void invokeStaticMethod(String className,String methodName,Object[] args) 
+			throws ClassNotFoundException, Exception {
+		Class<?> ownerClass = Class.forName(className);
+		@SuppressWarnings("rawtypes")
+		Class[] argsClass = new Class[args.length];
+		for (int i = 0; i < argsClass.length; i++) {
+			argsClass[i] = args[i].getClass();
+		}
+		Method method = ownerClass.getMethod(methodName, argsClass);
+		method.invoke(null, args);
+	}
+	/**
+	 * 新建实例
+	 * @param className
+	 * @param args
+	 * @return
+	 * @throws ClassNotFoundException
+	 * @throws NoSuchMethodException
+	 * @throws Exception
+	 */
+	private static Object newInstance(String className,Object[] args) 
+			throws ClassNotFoundException, NoSuchMethodException, Exception {
+		Class<?> ownerClass = Class.forName(className);
+		@SuppressWarnings("rawtypes")
+		Class[] argsClass = new Class[args.length];
+		for (int i = 0; i < argsClass.length; i++) {
+			argsClass[i] = args[i].getClass();
+		}
+		@SuppressWarnings("rawtypes")
+		Constructor cons = ownerClass.getConstructor(argsClass);
+		return cons.newInstance(args);
+	}
 }
